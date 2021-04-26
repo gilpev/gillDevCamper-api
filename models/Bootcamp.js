@@ -100,6 +100,12 @@ const BootcampSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    averageCost: {
+        type: Number
+    } 
+}, {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 });
 
 // Cretae bootcamp slug from the name
@@ -128,6 +134,21 @@ BootcampSchema.pre('save', async function(next) {
     // and so we dont need to save the address itself to data base
     this.address = undefined;
     next();
+});
+
+// Cascade delete courses when a bootcamp is deleted
+BootcampSchema.pre('remove', async function (next) {
+    console.log(`Courses are being removed from bootcamp ${this._id}`);
+    await this.model('Course').deleteMany({ bootcamp: this._id });
+    next();
 })
+
+// Reverse populate with virtuals
+BootcampSchema.virtual('courses', {
+    ref: 'Course',
+    localField: '_id',
+    foreignField: 'bootcamp',
+    justOne: false
+});
 
 module.exports = mongoose.model('Bootcamp', BootcampSchema);
