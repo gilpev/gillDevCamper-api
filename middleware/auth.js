@@ -41,6 +41,6 @@ exports.authorize = (...roles) => {
                 `User role ${req.user.role} is not authorized to access this route`, 403)
             )
         }
+        next();
     }
-    next();
 }

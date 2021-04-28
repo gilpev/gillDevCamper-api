@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const { userInfo } = require('os');
 
 const UserSchema = new mongoose.Schema({
     name: {
@@ -27,7 +29,7 @@ const UserSchema = new mongoose.Schema({
         minlength: 6,
         select: false
     },
-    rsestPasswordToken: String,
+    resetPasswordToken: String,
     resetPasswordExpire: Date,
     createdAt: {
         type: Date,
@@ -37,11 +39,15 @@ const UserSchema = new mongoose.Schema({
 
 // Encrypt password using bcryptjs => this is middleware that will run automatically pre save!
 UserSchema.pre('save', async function(next) {
+    if(!this.isModified('password')){
+        next();
+    }
+
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
 });
 
-// Sign JWT and return token => an instance method! not statuc and not middleware
+// Sign JWT and return token => an instance method! not static and not middleware
 UserSchema.methods.getSignedJwtToken = function() {
     return jwt.sign({id: this._id}, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRE
@@ -52,5 +58,22 @@ UserSchema.methods.getSignedJwtToken = function() {
 UserSchema.methods.matchPassword = async function(enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 } 
+
+// Generate and hash password token
+UserSchema.methods.getResetPasswordToken = function(){ 
+    // Generate token
+    const resetToken = crypto.randomBytes(20).toString('hex');
+
+    // Hash token and set to resetPasswordToken
+    this.resetPasswordToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+
+    // set Expire
+    this.resetPasswordExpire = Date.now() + 1000 * 60 * 10;
+
+    return resetToken;
+}
 
 module.exports = mongoose.model('User', UserSchema);
