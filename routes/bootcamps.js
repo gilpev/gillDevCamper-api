@@ -14,6 +14,7 @@ const Bootcamp = require('../models/Bootcamp');
 
 // Include other resource router
 const courseRouter = require('./courses');
+const reviewRouter = require('./reviews');
 
 // Protect route middleware
 const { protect, authorize } = require('../middleware/auth');
@@ -21,6 +22,7 @@ const advancedResults = require('../middleware/advancedResults');
 
 // Re-route into other resource router
 router.use('/:bootcampId/courses', courseRouter);
+router.use('/:bootcampId/reviews', reviewRouter);
 
 // Base route => /api/v1/bootcamps
 router
